@@ -33,6 +33,22 @@ Run it locally or on a VPS. Reddit often blocks serverless/cloud IPs (Vercel, AW
 - Export: Markdown download or print to PDF, both made in the browser
 - Model picker: live OpenRouter model list with prices, with separate models for threads and overview
 
+## Daily Discord report
+
+`scripts/daily-report.ts` sends every thread from the last 24h in one subreddit to a Discord webhook.
+Each thread shows only the question, people's conclusion, AI's conclusion and best answer. Threads with
+no comments show "No answers yet". If the run fails, an error message is posted to the channel.
+
+```bash
+npm run report            # send now
+npm run report -- --dry   # print the Discord payload instead of sending
+```
+
+On Railway, add a second service from the same repo with:
+- Start command: `npm run report`
+- Cron schedule: `30 4 * * *` (04:30 UTC = 10:00 AM IST)
+- Variables: `OPENROUTER_API_KEY`, `DEFAULT_THREAD_MODEL`, `REPORT_SUBREDDIT`, `DISCORD_WEBHOOK_URL`
+
 ## How it works
 
 ```
