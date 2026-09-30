@@ -6,6 +6,14 @@ export function importanceColor(n: number) {
 
 const SENTIMENT_DOT = { positive: "bg-pos", neutral: "bg-neu", negative: "bg-neg" } as const;
 const SUPPORT_LABEL = { many: "many agree", some: "some agree", one: "one person" } as const;
+const SHARE_LABEL: Record<string, string> = { most: "most people", many: "many people", some: "some people", few: "a few people", one: "one person" };
+const SHARE_STYLE: Record<string, string> = {
+  most: "bg-accent text-white",
+  many: "bg-accent-soft text-accent",
+  some: "bg-chip text-ink",
+  few: "bg-chip text-muted",
+  one: "bg-chip text-muted",
+};
 
 function timeAgo(iso: string) {
   const h = (Date.now() - new Date(iso).getTime()) / 3600_000;
@@ -69,6 +77,44 @@ export function ThreadCard({ thread }: { thread: Thread }) {
             </p>
           )}
           <p>{ai.summary}</p>
+          {ai.detailedSummary?.length > 0 && (
+            <details className="group rounded-lg border border-line">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 font-medium select-none">
+                <span>
+                  Detailed summary{" "}
+                  <span className="font-normal text-muted">· {ai.detailedSummary.length} viewpoints from {thread.commentCount} comments</span>
+                </span>
+                <span className="text-muted transition-transform group-open:rotate-180">▾</span>
+              </summary>
+              <div className="space-y-3 border-t border-line px-3 py-3">
+                {ai.detailedSummary.map((v, i) => (
+                  <div key={i}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">{v.viewpoint}</span>
+                      <span className={`rounded px-1.5 py-0.5 text-[11px] ${SHARE_STYLE[v.share] ?? SHARE_STYLE.some}`}>{SHARE_LABEL[v.share] ?? v.share}</span>
+                    </div>
+                    <p className="mt-1 text-muted">{v.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+          {(ai.peopleConclusion || ai.aiConclusion) && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {ai.peopleConclusion && (
+                <div className="rounded-lg bg-chip px-3 py-2">
+                  <div className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">👥 People&apos;s conclusion</div>
+                  {ai.peopleConclusion}
+                </div>
+              )}
+              {ai.aiConclusion && (
+                <div className="rounded-lg border border-accent/40 bg-accent-soft/40 px-3 py-2">
+                  <div className="mb-1 text-xs font-semibold tracking-wide text-accent uppercase">🤖 AI&apos;s conclusion</div>
+                  {ai.aiConclusion}
+                </div>
+              )}
+            </div>
+          )}
           {ai.keyAnswers.length > 0 && (
             <ul className="space-y-1.5">
               {ai.keyAnswers.map((k, i) => (

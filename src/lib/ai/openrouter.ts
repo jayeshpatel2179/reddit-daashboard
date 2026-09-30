@@ -17,7 +17,7 @@ export async function chat(
   model: string,
   messages: ChatMessage[],
   opts: { json?: boolean; signal?: AbortSignal; maxTokens?: number } = {},
-): Promise<{ content: string; usage: Usage }> {
+): Promise<{ content: string; usage: Usage; truncated: boolean }> {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error("OPENROUTER_API_KEY is not set in .env.local");
 
@@ -48,6 +48,8 @@ export async function chat(
 
   return {
     content: String(data.choices[0].message?.content ?? ""),
+    // "length" means the model hit max_tokens and the reply is cut off.
+    truncated: data.choices[0].finish_reason === "length" || data.choices[0].native_finish_reason === "max_tokens",
     usage: {
       promptTokens: data.usage?.prompt_tokens ?? 0,
       completionTokens: data.usage?.completion_tokens ?? 0,
@@ -66,7 +68,11 @@ export function parseJsonLoose(raw: string): unknown {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-/** Ask for JSON, validate it, and retry once with the error if the model got it wrong. */
+/**
+ * Ask for JSON and validate it. If the reply was cut off (hit max_tokens) we
+ * ask again with double the room; if it was just malformed we ask the model
+ * to fix it. Up to 3 attempts.
+ */
 export async function chatJson<T>(
   model: string,
   messages: ChatMessage[],
@@ -76,9 +82,16 @@ export async function chatJson<T>(
 ): Promise<T> {
   let lastErr: unknown;
   let convo = messages;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const { content, usage: u } = await chat(model, convo, { ...opts, json: true });
+  let maxTokens = opts.maxTokens ?? 2000;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { content, usage: u, truncated } = await chat(model, convo, { ...opts, maxTokens, json: true });
     addUsage(usage, u);
+    if (truncated) {
+      lastErr = new Error(`Reply was cut off at ${maxTokens} tokens`);
+      maxTokens = Math.min(maxTokens * 2, 16_000);
+      convo = messages;
+      continue;
+    }
     try {
       return validate(parseJsonLoose(content));
     } catch (err) {

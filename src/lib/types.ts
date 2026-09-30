@@ -37,6 +37,9 @@ export type ThreadAI = {
   importance: number; // 1-10
   importanceReason: string;
   tags: string[];
+  detailedSummary: { viewpoint: string; detail: string; share: "most" | "many" | "some" | "few" | "one" }[];
+  peopleConclusion: string; // what the commenters as a group concluded
+  aiConclusion: string; // the AI's own assessment
 };
 
 export type Thread = {

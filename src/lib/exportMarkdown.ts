@@ -52,6 +52,13 @@ export function toMarkdown(s: AnalysisState): string {
       for (const k of a.keyAnswers) lines.push(`- ${k.point} _(${k.support})_`);
       lines.push("");
     }
+    if (a.detailedSummary?.length) {
+      lines.push("**Detailed summary**", "");
+      for (const v of a.detailedSummary) lines.push(`- **${v.viewpoint}** _(${v.share})_: ${v.detail}`);
+      lines.push("");
+    }
+    if (a.peopleConclusion) lines.push(`**👥 People's conclusion:** ${a.peopleConclusion}`, "");
+    if (a.aiConclusion) lines.push(`**🤖 AI's conclusion:** ${a.aiConclusion}`, "");
     if (a.bestAnswer) lines.push(`> ★ ${a.bestAnswer}`, "");
   }
 
